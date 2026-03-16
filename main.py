@@ -26,10 +26,12 @@ from api.classroom_api import classroom_api
 from api.data_export_import_api import data_export_import_api
 from hacks.joke import joke_api  # Import the joke API blueprint
 from api.post import post_api  # Import the social media post API
+from api.fopl_auth_api import fopl_auth_api  # FOPL login/register
 #from api.announcement import announcement_api ##temporary revert
 
 # database Initialization functions
 from model.user import User, initUsers
+from model.fopl_user import initFoplUsers
 from model.user import Section;
 from model.github import GitHubUser
 from model.feedback import Feedback
@@ -79,11 +81,13 @@ app.register_blueprint(feedback_api)
 app.register_blueprint(data_export_import_api)  # Register the data export/import API
 app.register_blueprint(joke_api)  # Register the joke API blueprint
 app.register_blueprint(post_api)  # Register the social media post API
+app.register_blueprint(fopl_auth_api)  # FOPL login/register
 # app.register_blueprint(announcement_api) ##temporary revert
 
 # Jokes file initialization
 with app.app_context():
     initJokes()
+    initFoplUsers()
 
 # Tell Flask-Login the view function name of your login route
 login_manager.login_view = "login"
