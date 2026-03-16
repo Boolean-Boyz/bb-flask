@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FOPL Database Viewer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+    body { font-family: 'Lato', sans-serif; background: #f4f8f4; margin: 0; }
+
+    /* ── Nav ── */
+    .fopl-nav {
+      background: #023b0f;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 30px; flex-wrap: wrap;
+    }
+    .fopl-nav-brand {
+      display: flex; align-items: center; gap: 14px; text-decoration: none;
+    }
+    .fopl-nav-brand img { height: 72px; width: auto; padding: 8px 0; display: block; }
+    .fopl-nav-brand span {
+      color: #fff; font-family: 'Cabin', sans-serif; font-size: 1rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .fopl-nav-links { display: flex; gap: 0; list-style: none; margin: 0; padding: 0; }
+    .fopl-nav-links li a {
+      display: block; color: #fff; text-decoration: none;
+      font-family: 'Cabin', sans-serif; font-size: 0.88rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 16px 18px; transition: background 0.2s;
+    }
+    .fopl-nav-links li a:hover { background: rgba(255,255,255,0.12); }
+
+    /* ── Page body ── */
+    .fopl-page { padding: 32px 24px; max-width: 1400px; margin: 0 auto; }
+    .fopl-page h1 {
+      font-family: 'Cabin', sans-serif; color: #023b0f;
+      font-size: 1.5rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; margin-bottom: 4px; border: none;
+    }
+    .fopl-page .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 24px; }
+
+    /* ── Sidebar ── */
+    .fopl-sidebar .card-header {
+      background: #023b0f; color: #fff;
+      font-family: 'Cabin', sans-serif; font-weight: 700;
+      font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .fopl-sidebar .list-group-item {
+      font-size: 0.88rem; cursor: pointer;
+    }
+    .fopl-sidebar .list-group-item.active {
+      background: #023b0f; border-color: #023b0f;
+    }
+
+    /* ── Table card ── */
+    .fopl-table-card .card-header {
+      background: #023b0f; color: #fff;
+      font-family: 'Cabin', sans-serif; font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .fopl-table-card .card-header .badge { background: rgba(255,255,255,0.25) !important; }
+
+    /* ── Schema card ── */
+    .fopl-schema-card .card-header {
+      background: #e8f5e9; color: #023b0f;
+      font-family: 'Cabin', sans-serif; font-weight: 700;
+      font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+
+    /* ── Footer ── */
+    .fopl-footer {
+      background: #023b0f; color: rgba(255,255,255,0.7);
+      text-align: center; padding: 18px; font-size: 0.85rem; margin-top: 48px;
+    }
+    .fopl-footer a { color: rgba(255,255,255,0.85); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="fopl-nav">
+  <a class="fopl-nav-brand" href="/home">
+    <img src="https://img1.wsimg.com/isteam/ip/1261387c-c13d-44e7-b4b8-53ebdce2bc66/fopllogo1B.jpg"
+         alt="Friends of the Poway Library" />
+    <span>Database Viewer</span>
+  </a>
+  <ul class="fopl-nav-links">
+    <li><a href="/home">Home</a></li>
+    <li><a href="/bookstore">Bookstore</a></li>
+    <li><a href="/login">Sign In</a></li>
+  </ul>
+</nav>
+
+<!-- Content -->
+<div class="fopl-page">
+  <h1>Database Viewer</h1>
+  <p class="subtitle">Viewing: <code>user_management.db</code> &mdash; Admin access only</p>
+
+  <div class="row">
+
+    <!-- Sidebar: table list -->
+    <div class="col-md-3 fopl-sidebar mb-4">
+      <div class="card">
+        <div class="card-header">Tables ({{ tables|length }})</div>
+        <div class="list-group list-group-flush" style="max-height: 70vh; overflow-y: auto;">
+          {% for table in tables %}
+          <a href="{{ url_for('fopl_db_viewer', table=table) }}"
+             class="list-group-item list-group-item-action {% if table == selected_table %}active{% endif %}">
+            {{ table }}
+            {% if row_counts.get(table) is not none %}
+            <span class="badge bg-secondary float-end">{{ row_counts[table] }}</span>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Main: table data -->
+    <div class="col-md-9">
+      {% if selected_table %}
+
+      <!-- Row data -->
+      <div class="card fopl-table-card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>{{ selected_table }}</strong>
+          <span class="badge">{{ row_count }} rows</span>
+        </div>
+        <div class="card-body">
+          {% if columns %}
+          <div class="table-responsive">
+            <table class="table table-striped table-hover" id="dataTable">
+              <thead class="table-dark">
+                <tr>
+                  {% for col in columns %}
+                  <th>{{ col }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in rows %}
+                <tr>
+                  {% for value in row %}
+                  <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                      title="{{ value }}">
+                    {% if value is none %}
+                    <span class="text-muted">NULL</span>
+                    {% elif value|string|length > 100 %}
+                    {{ value|string|truncate(100) }}
+                    {% else %}
+                    {{ value }}
+                    {% endif %}
+                  </td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">No data in this table.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Schema -->
+      <div class="card fopl-schema-card">
+        <div class="card-header">Schema: {{ selected_table }}</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Column</th><th>Type</th><th>Not Null</th><th>Default</th><th>Primary Key</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for col in schema %}
+              <tr>
+                <td><code>{{ col.name }}</code></td>
+                <td>{{ col.type }}</td>
+                <td>{% if col.notnull %}<span class="badge bg-warning text-dark">Yes</span>{% else %}No{% endif %}</td>
+                <td>{{ col.dflt_value if col.dflt_value else '—' }}</td>
+                <td>{% if col.pk %}<span class="badge bg-success">Yes</span>{% else %}No{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% else %}
+      <div class="alert alert-info">
+        Select a table from the list on the left to view its contents.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<div class="fopl-footer">
+  &copy; 2025 Friends of the Poway Library &mdash;
+  <a href="https://powayfriends.org">powayfriends.org</a>
+</div>
+
+<script>
+  $(document).ready(function () {
+    $('#dataTable').DataTable({
+      pageLength: 25,
+      lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+      order: [[0, 'asc']],
+      scrollX: true
+    });
+  });
+</script>
+
+</body>
+</html>

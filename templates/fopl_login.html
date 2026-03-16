@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — Friends of the Poway Library</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Lato', sans-serif; background: #f4f8f4; min-height: 100vh; display: flex; flex-direction: column; }
+
+    .fopl-nav {
+      background: #023b0f; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 30px; flex-wrap: wrap;
+    }
+    .fopl-logo-wrap img { height: 90px; width: auto; padding: 8px 0; display: block; }
+    .fopl-nav-links { display: flex; gap: 0; list-style: none; margin: 0; padding: 0; }
+    .fopl-nav-links li a {
+      display: block; color: #fff; text-decoration: none;
+      font-family: 'Cabin', sans-serif; font-size: 0.9rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 18px 20px; transition: background 0.2s;
+    }
+    .fopl-nav-links li a:hover { background: rgba(255,255,255,0.12); }
+
+    .fopl-auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 20px; }
+
+    .fopl-card {
+      background: #fff; border-radius: 6px;
+      box-shadow: 0 4px 24px rgba(2,59,15,0.12);
+      width: 100%; max-width: 420px; overflow: hidden; border-top: 4px solid #023b0f;
+    }
+
+    .fopl-tabs { display: flex; border-bottom: 2px solid #e5e5e5; }
+    .fopl-tab {
+      flex: 1; padding: 14px; background: none; border: none;
+      font-family: 'Cabin', sans-serif; font-size: 0.95rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: #888;
+      cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color 0.2s;
+    }
+    .fopl-tab.active { color: #023b0f; border-bottom-color: #023b0f; }
+
+    .fopl-form-panel { padding: 28px 32px 32px; display: none; }
+    .fopl-form-panel.active { display: block; }
+    .fopl-form-panel h2 {
+      font-family: 'Cabin', sans-serif; font-size: 1.2rem; font-weight: 700;
+      color: #023b0f; margin: 0 0 20px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+
+    .fopl-field { margin-bottom: 16px; }
+    .fopl-field label {
+      display: block; font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em; color: #555; margin-bottom: 5px;
+    }
+    .fopl-field input {
+      width: 100%; padding: 10px 14px; border: 1px solid #ccc; border-radius: 4px;
+      font-size: 0.97rem; font-family: 'Lato', sans-serif; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .fopl-field input:focus { border-color: #023b0f; box-shadow: 0 0 0 3px rgba(2,59,15,0.08); }
+
+    .fopl-submit {
+      width: 100%; padding: 12px; background: #023b0f; color: #fff; border: none;
+      border-radius: 4px; font-family: 'Cabin', sans-serif; font-weight: 700;
+      font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;
+      cursor: pointer; margin-top: 4px; transition: background 0.2s;
+    }
+    .fopl-submit:hover { background: #045218; }
+
+    .fopl-msg { margin-top: 12px; font-size: 0.9rem; font-weight: 600; padding: 10px 14px; border-radius: 4px; display: none; }
+    .fopl-msg.error   { background: #fdecea; color: #b00020; display: block; }
+    .fopl-msg.success { background: #e8f5e9; color: #1b5e20; display: block; }
+
+    .fopl-footer { background: #023b0f; color: rgba(255,255,255,0.7); text-align: center; padding: 18px; font-size: 0.85rem; }
+    .fopl-footer a { color: rgba(255,255,255,0.85); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<nav class="fopl-nav">
+  <div class="fopl-logo-wrap">
+    <img src="https://img1.wsimg.com/isteam/ip/1261387c-c13d-44e7-b4b8-53ebdce2bc66/fopllogo1B.jpg"
+         alt="Friends of the Poway Library" />
+  </div>
+  <ul class="fopl-nav-links">
+    <li><a href="http://127.0.0.1:4500/home">Home</a></li>
+    <li><a href="http://127.0.0.1:4500/bookstore">Bookstore</a></li>
+  </ul>
+</nav>
+
+<div class="fopl-auth-wrap">
+  <div class="fopl-card">
+
+    <div class="fopl-tabs">
+      <button class="fopl-tab active" onclick="showTab('login')">Sign In</button>
+      <button class="fopl-tab"        onclick="showTab('register')">Create Account</button>
+    </div>
+
+    <!-- Login -->
+    <div id="panel-login" class="fopl-form-panel active">
+      <h2>Sign In</h2>
+      {% if error %}
+      <div class="fopl-msg error">{{ error }}</div>
+      {% endif %}
+      <div class="fopl-field">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="fopl-field">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="fopl-submit" onclick="doLogin()">Sign In</button>
+      <div class="fopl-msg" id="login-msg"></div>
+    </div>
+
+    <!-- Register -->
+    <div id="panel-register" class="fopl-form-panel">
+      <h2>Create Account</h2>
+      <div class="fopl-field">
+        <label for="reg-name">Full Name</label>
+        <input type="text" id="reg-name" placeholder="Jane Smith" autocomplete="name" />
+      </div>
+      <div class="fopl-field">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="fopl-field">
+        <label for="reg-password">Password <span style="font-weight:400;text-transform:none;">(min 8 characters)</span></label>
+        <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" />
+      </div>
+      <button class="fopl-submit" onclick="doRegister()">Create Account</button>
+      <div class="fopl-msg" id="reg-msg"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="fopl-footer">
+  &copy; 2025 Friends of the Poway Library &mdash;
+  <a href="https://powayfriends.org">powayfriends.org</a>
+</div>
+
+<script>
+  const NEXT = {{ next | tojson }};
+
+  function showTab(tab) {
+    document.querySelectorAll('.fopl-tab').forEach((btn, i) => {
+      btn.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+    document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text; el.className = 'fopl-msg ' + type; el.style.display = 'block';
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) return showMsg('login-msg', 'Please enter your email and password.', 'error');
+    try {
+      const res  = await fetch('/api/fopl/login', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showMsg('login-msg', data.message || 'Login failed.', 'error');
+      showMsg('login-msg', data.message, 'success');
+      setTimeout(() => { window.location.href = NEXT || '/fopl/db'; }, 800);
+    } catch {
+      showMsg('login-msg', 'Could not reach the server.', 'error');
+    }
+  }
+
+  async function doRegister() {
+    const name     = document.getElementById('reg-name').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!name || !email || !password) return showMsg('reg-msg', 'Please fill in all fields.', 'error');
+    try {
+      const res  = await fetch('/api/fopl/register', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showMsg('reg-msg', data.message || 'Registration failed.', 'error');
+      showMsg('reg-msg', 'Account created! Redirecting…', 'success');
+      setTimeout(() => { window.location.href = NEXT || '/fopl/db'; }, 900);
+    } catch {
+      showMsg('reg-msg', 'Could not reach the server.', 'error');
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('panel-login').classList.contains('active')) doLogin();
+    else doRegister();
+  });
+</script>
+
+</body>
+</html>

@@ -90,11 +90,11 @@ with app.app_context():
     initFoplUsers()
 
 # Tell Flask-Login the view function name of your login route
-login_manager.login_view = "login"
+login_manager.login_view = "ocs_login"
 
 @login_manager.unauthorized_handler
 def unauthorized_callback():
-    return redirect(url_for('login', next=request.path))
+    return redirect(url_for('ocs_login', next=request.path))
 
 # register URIs for server pages
 @login_manager.user_loader
@@ -111,8 +111,14 @@ def is_safe_url(target):
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/login')
+def fopl_login_page():
+    next_url = request.args.get('next', '')
+    return render_template('fopl_login.html', next=next_url, error=None)
+
+
+@app.route('/ocslogin', methods=['GET', 'POST'])
+def ocs_login():
     error = None
     next_page = request.args.get('next', '') or request.form.get('next', '')
     if request.method == 'POST':
@@ -312,6 +318,66 @@ def update_user(uid):
 
 
     
+@app.route('/fopl/db')
+def fopl_db_viewer():
+    """FOPL database viewer — FOPL Admin only."""
+    import sqlite3
+    import jwt as pyjwt
+
+    # Verify FOPL admin token
+    token = request.cookies.get('fopl_token')
+    if not token:
+        return redirect('/login?next=/fopl/db')
+    try:
+        data = pyjwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        from model.fopl_user import FoplUser
+        user = FoplUser.query.get(data.get('fopl_id'))
+        if not user or not user.is_admin():
+            return jsonify({'error': 'Admin access required'}), 403
+    except Exception:
+        return redirect('/login')
+
+    db_path = os.path.join(current_app.instance_path, 'volumes', 'user_management.db')
+    if not os.path.exists(db_path):
+        db_path = os.path.join(current_app.instance_path, 'user_management.db')
+
+    selected_table = request.args.get('table')
+    tables, columns, rows, schema = [], [], [], []
+    row_count, row_counts = 0, {}
+
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+        tables = [r[0] for r in cursor.fetchall()]
+        for t in tables:
+            try:
+                cursor.execute(f'SELECT COUNT(*) FROM "{t}"')
+                row_counts[t] = cursor.fetchone()[0]
+            except Exception:
+                row_counts[t] = None
+        if selected_table and selected_table in tables:
+            cursor.execute(f'PRAGMA table_info("{selected_table}")')
+            schema = [{'cid': r[0], 'name': r[1], 'type': r[2], 'notnull': r[3], 'dflt_value': r[4], 'pk': r[5]}
+                      for r in cursor.fetchall()]
+            columns = [s['name'] for s in schema]
+            cursor.execute(f'SELECT * FROM "{selected_table}" LIMIT 1000')
+            rows = [list(r) for r in cursor.fetchall()]
+            row_count = row_counts.get(selected_table, len(rows))
+        conn.close()
+    except Exception as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+    return render_template('fopl_db_viewer.html',
+                           tables=tables,
+                           selected_table=selected_table,
+                           columns=columns,
+                           rows=rows,
+                           schema=schema,
+                           row_count=row_count,
+                           row_counts=row_counts)
+
+
 # Create an AppGroup for custom commands
 custom_cli = AppGroup('custom', help='Custom commands')
 
