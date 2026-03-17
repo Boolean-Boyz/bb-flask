@@ -27,6 +27,7 @@ from api.data_export_import_api import data_export_import_api
 from hacks.joke import joke_api  # Import the joke API blueprint
 from api.post import post_api  # Import the social media post API
 from api.fopl_auth_api import fopl_auth_api  # FOPL login/register
+from api.fopl_puzzle_api import fopl_puzzle_api  # FOPL puzzle stats
 #from api.announcement import announcement_api ##temporary revert
 
 # database Initialization functions
