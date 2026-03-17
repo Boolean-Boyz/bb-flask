@@ -33,6 +33,7 @@ from api.fopl_puzzle_api import fopl_puzzle_api  # FOPL puzzle stats
 # database Initialization functions
 from model.user import User, initUsers
 from model.fopl_user import initFoplUsers
+from model.fopl_puzzle import FoplPuzzleStat  # ensures table is created
 from model.user import Section;
 from model.github import GitHubUser
 from model.feedback import Feedback
@@ -82,7 +83,8 @@ app.register_blueprint(feedback_api)
 app.register_blueprint(data_export_import_api)  # Register the data export/import API
 app.register_blueprint(joke_api)  # Register the joke API blueprint
 app.register_blueprint(post_api)  # Register the social media post API
-app.register_blueprint(fopl_auth_api)  # FOPL login/register
+app.register_blueprint(fopl_auth_api)   # FOPL login/register
+app.register_blueprint(fopl_puzzle_api) # FOPL puzzle stats
 # app.register_blueprint(announcement_api) ##temporary revert
 
 # Jokes file initialization
