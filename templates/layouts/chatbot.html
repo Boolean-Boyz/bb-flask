@@ -448,7 +448,7 @@
             });
     };
 
-    // ── AI Call (tries /api/groq/chat then /api/gemini) ─────
+    // ── AI Call (tries /api/groq/chat — no auth required) ─────
     function callAI(userMessage) {
         var messages = [
             { role: 'system', content: 'You are a helpful, friendly AI assistant for a school coding platform. Help students with homework, coding questions, and general learning. Keep responses concise and clear. Use markdown formatting for code snippets.' }
@@ -460,6 +460,7 @@
         }
         messages.push({ role: 'user', content: userMessage });
 
+        // Try Groq (no auth required, free)
         return fetch('/api/groq/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -467,32 +468,14 @@
             body: JSON.stringify({ messages: messages, model: 'llama-3.3-70b-versatile', temperature: 0.7, max_tokens: 1024 })
         })
         .then(function(resp) {
-            if (!resp.ok) throw new Error('Groq failed');
+            if (!resp.ok) throw new Error('Groq failed: ' + resp.status);
             return resp.json();
         })
         .then(function(data) {
             if (data.success && data.response) return data.response;
+            // Groq original endpoint returns different format
+            if (data.choices && data.choices[0]) return data.choices[0].message.content;
             throw new Error('No response from Groq');
-        })
-        .catch(function() {
-            // Fallback to Gemini
-            return fetch('/api/gemini', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    text: userMessage,
-                    prompt: 'You are a helpful, friendly AI assistant for a school coding platform. Help students with homework, coding questions, and general learning. Keep responses concise and clear.'
-                })
-            })
-            .then(function(resp) {
-                if (!resp.ok) throw new Error('Gemini failed');
-                return resp.json();
-            })
-            .then(function(data) {
-                if (data.success && data.text) return data.text;
-                throw new Error('No response from Gemini');
-            });
         });
     }
 

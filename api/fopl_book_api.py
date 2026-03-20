@@ -2,9 +2,105 @@ import requests as http
 from flask import Blueprint, request, jsonify, current_app, g
 from flask_restful import Api, Resource
 from sqlalchemy import or_
+import os
 
 from __init__ import db
 from api.fopl_auth_api import fopl_token_required
+
+
+def _call_ai(prompt_text, system_prompt=None, timeout=30):
+    """Try Gemini first, fall back to Groq. Returns the AI text or raises."""
+    # ── Try Gemini ───────────────────────────────────────────
+    gemini_key = current_app.config.get('GEMINI_API_KEY')
+    gemini_server = current_app.config.get('GEMINI_SERVER')
+    if gemini_key and gemini_server:
+        payload = {'contents': [{'parts': [{'text': prompt_text}]}]}
+        if system_prompt:
+            payload['system_instruction'] = {'parts': [{'text': system_prompt}]}
+        resp = http.post(
+            f'{gemini_server}?key={gemini_key}',
+            headers={'Content-Type': 'application/json'},
+            json=payload, timeout=timeout,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data['candidates'][0]['content']['parts'][0]['text']
+
+    # ── Try Groq ─────────────────────────────────────────────
+    groq_key = current_app.config.get('GROQ_API_KEY') or os.getenv('GROQ_API_KEY')
+    groq_server = current_app.config.get('GROQ_SERVER') or 'https://api.groq.com/openai/v1/chat/completions'
+    if groq_key:
+        messages = []
+        if system_prompt:
+            messages.append({'role': 'system', 'content': system_prompt})
+        messages.append({'role': 'user', 'content': prompt_text})
+        resp = http.post(
+            groq_server,
+            headers={'Authorization': f'Bearer {groq_key}', 'Content-Type': 'application/json'},
+            json={'model': 'llama-3.3-70b-versatile', 'messages': messages, 'temperature': 0.7, 'max_tokens': 1024},
+            timeout=timeout,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data['choices'][0]['message']['content']
+
+    raise RuntimeError('No AI provider configured. Set GEMINI_API_KEY or GROQ_API_KEY in your .env file.')
+
+
+def _call_ai_chat(system_prompt, history_messages, user_msg, timeout=60):
+    """Multi-turn chat: try Gemini then Groq. Returns the AI reply text or raises."""
+    # ── Try Gemini ───────────────────────────────────────────
+    gemini_key = current_app.config.get('GEMINI_API_KEY')
+    gemini_server = current_app.config.get('GEMINI_SERVER')
+    if gemini_key and gemini_server:
+        gemini_contents = [
+            {'role': 'user', 'parts': [{'text': 'You are the FOPL bookstore assistant. Follow the system instructions given to you.'}]},
+            {'role': 'model', 'parts': [{'text': "Understood! I'm the FOPL Bookstore Assistant. How can I help you find your next great read today?"}]},
+        ]
+        for msg in history_messages[-20:]:
+            role = 'user' if msg.get('role') == 'user' else 'model'
+            text = (msg.get('content') or '').strip()
+            if text:
+                gemini_contents.append({'role': role, 'parts': [{'text': text}]})
+        gemini_contents.append({'role': 'user', 'parts': [{'text': user_msg}]})
+
+        payload = {
+            'system_instruction': {'parts': [{'text': system_prompt}]},
+            'contents': gemini_contents,
+            'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 1024},
+        }
+        resp = http.post(
+            f'{gemini_server}?key={gemini_key}',
+            headers={'Content-Type': 'application/json'},
+            json=payload, timeout=timeout,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data['candidates'][0]['content']['parts'][0]['text']
+
+    # ── Try Groq ─────────────────────────────────────────────
+    groq_key = current_app.config.get('GROQ_API_KEY') or os.getenv('GROQ_API_KEY')
+    groq_server = current_app.config.get('GROQ_SERVER') or 'https://api.groq.com/openai/v1/chat/completions'
+    if groq_key:
+        messages = [{'role': 'system', 'content': system_prompt}]
+        for msg in history_messages[-20:]:
+            role = msg.get('role', 'user')
+            text = (msg.get('content') or '').strip()
+            if text:
+                messages.append({'role': role, 'content': text})
+        messages.append({'role': 'user', 'content': user_msg})
+
+        resp = http.post(
+            groq_server,
+            headers={'Authorization': f'Bearer {groq_key}', 'Content-Type': 'application/json'},
+            json={'model': 'llama-3.3-70b-versatile', 'messages': messages, 'temperature': 0.7, 'max_tokens': 1024},
+            timeout=timeout,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data['choices'][0]['message']['content']
+
+    raise RuntimeError('No AI provider configured. Set GEMINI_API_KEY or GROQ_API_KEY in your .env file.')
 from model.fopl_book import FoplBook
 
 fopl_book_api = Blueprint('fopl_book_api', __name__, url_prefix='/api/fopl/books')
@@ -104,11 +200,6 @@ class _AISearch(Resource):
         if not query:
             return {'message': 'Query required'}, 400
 
-        api_key = current_app.config.get('GEMINI_API_KEY')
-        server  = current_app.config.get('GEMINI_SERVER')
-        if not api_key:
-            return {'message': 'AI search is not configured yet.'}, 503
-
         # Build catalog context from DB
         books = FoplBook.query.filter(FoplBook._quantity > 0).all()
         catalog_lines = []
@@ -136,15 +227,8 @@ For each recommendation, include:
 Be warm, friendly, and conversational. If no books closely match, suggest the closest alternatives.
 Only recommend books that appear in the catalog above."""
 
-        payload = {'contents': [{'parts': [{'text': prompt}]}]}
         try:
-            resp = http.post(
-                f'{server}?key={api_key}',
-                headers={'Content-Type': 'application/json'},
-                json=payload, timeout=30,
-            )
-            data = resp.json()
-            text = data['candidates'][0]['content']['parts'][0]['text']
+            text = _call_ai(prompt)
             return jsonify({'response': text})
         except Exception as e:
             return {'message': f'AI error: {str(e)}'}, 500
@@ -163,11 +247,6 @@ class _Chat(Resource):
         history  = body.get('history') or []
         if not user_msg:
             return {'message': 'message field is required'}, 400
-
-        api_key = current_app.config.get('GEMINI_API_KEY')
-        server  = current_app.config.get('GEMINI_SERVER')
-        if not api_key or not server:
-            return {'message': 'AI chatbot is not configured (missing GEMINI_API_KEY).'}, 503
 
         # ── Build live catalogue snapshot ────────────────────────────
         books = FoplBook.query.filter(FoplBook._quantity > 0).all()
@@ -223,52 +302,8 @@ RULES:
 - When recommending series books, always mention the series name and book number so customers know reading order.
 - If a customer mentions an age or grade, acknowledge it and explain why your picks are age-appropriate."""
 
-        # ── Build Gemini conversation ────────────────────────────────
-        gemini_contents = []
-
-        # System instruction as first user/model exchange
-        gemini_contents.append({
-            'role': 'user',
-            'parts': [{'text': 'You are the FOPL bookstore assistant. Follow the system instructions given to you.'}]
-        })
-        gemini_contents.append({
-            'role': 'model',
-            'parts': [{'text': 'Understood! I\'m the FOPL Bookstore Assistant. How can I help you find your next great read today?'}]
-        })
-
-        # Replay conversation history
-        for msg in history[-20:]:  # limit to last 20 messages
-            role = 'user' if msg.get('role') == 'user' else 'model'
-            text = (msg.get('content') or '').strip()
-            if text:
-                gemini_contents.append({'role': role, 'parts': [{'text': text}]})
-
-        # Current user message
-        gemini_contents.append({
-            'role': 'user',
-            'parts': [{'text': user_msg}]
-        })
-
-        payload = {
-            'system_instruction': {'parts': [{'text': system_prompt}]},
-            'contents': gemini_contents,
-            'generationConfig': {
-                'temperature': 0.7,
-                'maxOutputTokens': 1024,
-            }
-        }
-
         try:
-            resp = http.post(
-                f'{server}?key={api_key}',
-                headers={'Content-Type': 'application/json'},
-                json=payload, timeout=60,
-            )
-            if resp.status_code != 200:
-                return {'message': f'AI service error ({resp.status_code})'}, 502
-
-            data = resp.json()
-            reply = data['candidates'][0]['content']['parts'][0]['text']
+            reply = _call_ai_chat(system_prompt, history, user_msg, timeout=60)
 
             # ── Extract mentioned book IDs for frontend highlighting ─
             mentioned = []
