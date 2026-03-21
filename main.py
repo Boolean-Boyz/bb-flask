@@ -35,7 +35,7 @@ from api.fopl_book_api import fopl_book_api       # FOPL book catalog + AI
 from model.user import User, initUsers
 from model.fopl_user import initFoplUsers
 from model.fopl_puzzle import FoplPuzzleStat  # ensures table is created
-from model.fopl_book   import FoplBook, initFoplBooks  # book catalog
+from model.fopl_book   import FoplBook, initFoplBooks, updateFoplBookPrices  # book catalog
 from model.user import Section;
 from model.github import GitHubUser
 from model.feedback import Feedback
@@ -95,6 +95,7 @@ with app.app_context():
     initJokes()
     initFoplUsers()
     initFoplBooks()
+    updateFoplBookPrices()
 
 # Tell Flask-Login the view function name of your login route
 login_manager.login_view = "ocs_login"
