@@ -88,6 +88,8 @@ class _Login(Resource):
         _set_token_cookie(resp, user)
         return resp
 
+
+class _Logout(Resource):
     @fopl_token_required
     def delete(self):
         resp = jsonify({'message': 'Logged out successfully'})
@@ -103,4 +105,5 @@ class _Me(Resource):
 
 api.add_resource(_Register, '/register')
 api.add_resource(_Login,    '/login')
+api.add_resource(_Logout,   '/login')  # DELETE /login → logout
 api.add_resource(_Me,       '/me')

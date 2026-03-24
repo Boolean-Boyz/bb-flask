@@ -28,14 +28,16 @@ from hacks.joke import joke_api  # Import the joke API blueprint
 from api.post import post_api  # Import the social media post API
 from api.fopl_auth_api import fopl_auth_api  # FOPL login/register
 from api.fopl_puzzle_api import fopl_puzzle_api  # FOPL puzzle stats
-from api.fopl_book_api import fopl_book_api       # FOPL book catalog + AI
+from api.fopl_book_api import fopl_book_api       # FOPL book CRUD
+from api.fopl_chat_api import fopl_chat_api       # FOPL AI search + chatbot
 #from api.announcement import announcement_api ##temporary revert
 
 # database Initialization functions
 from model.user import User, initUsers
-from model.fopl_user import initFoplUsers
+from model.fopl_user import FoplUser
 from model.fopl_puzzle import FoplPuzzleStat  # ensures table is created
-from model.fopl_book   import FoplBook, initFoplBooks, updateFoplBookPrices  # book catalog
+from model.fopl_book   import FoplBook  # book catalog model
+from scripts.fopl_seed import initFoplUsers, initFoplBooks, updateFoplBookPrices  # seed data
 from model.user import Section;
 from model.github import GitHubUser
 from model.feedback import Feedback
@@ -87,7 +89,8 @@ app.register_blueprint(joke_api)  # Register the joke API blueprint
 app.register_blueprint(post_api)  # Register the social media post API
 app.register_blueprint(fopl_auth_api)   # FOPL login/register
 app.register_blueprint(fopl_puzzle_api) # FOPL puzzle stats
-app.register_blueprint(fopl_book_api)   # FOPL book catalog + AI
+app.register_blueprint(fopl_book_api)   # FOPL book CRUD
+app.register_blueprint(fopl_chat_api)   # FOPL AI search + chatbot
 # app.register_blueprint(announcement_api) ##temporary revert
 
 # Jokes file initialization

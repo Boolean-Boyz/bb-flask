@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from __init__ import app, db
+from __init__ import db
 
 
 class FoplUser(db.Model):
@@ -78,17 +78,3 @@ class FoplUser(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
-
-def initFoplUsers():
-    with app.app_context():
-        db.create_all()
-        if not FoplUser.query.filter_by(_email='admin@powayfriends.org').first():
-            admin = FoplUser(
-                name='FOPL Admin',
-                email='admin@powayfriends.org',
-                password='changeme123',
-                role='Admin',
-            )
-            admin.create()
-            print('Seeded FOPL admin: admin@powayfriends.org / changeme123')
