@@ -30,7 +30,7 @@ docker compose up --build -d
 Verify:
 ```bash
 docker compose ps
-curl http://localhost:8415
+curl http://localhost:8321
 ```
 
 ## 3. Install and Configure Nginx
