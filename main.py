@@ -27,6 +27,7 @@ from api.data_export_import_api import data_export_import_api
 from hacks.joke import joke_api  # Import the joke API blueprint
 from api.post import post_api  # Import the social media post API
 from api.fopl_auth_api import fopl_auth_api  # FOPL login/register
+from api.fopl_admin_api import fopl_admin_api  # FOPL admin dashboard
 from api.fopl_puzzle_api import fopl_puzzle_api  # FOPL puzzle stats
 from api.fopl_book_api import fopl_book_api       # FOPL book CRUD
 from api.fopl_chat_api import fopl_chat_api       # FOPL AI search + chatbot
@@ -90,6 +91,7 @@ app.register_blueprint(data_export_import_api)  # Register the data export/impor
 app.register_blueprint(joke_api)  # Register the joke API blueprint
 app.register_blueprint(post_api)  # Register the social media post API
 app.register_blueprint(fopl_auth_api)   # FOPL login/register
+app.register_blueprint(fopl_admin_api)  # FOPL admin dashboard
 app.register_blueprint(fopl_puzzle_api) # FOPL puzzle stats
 app.register_blueprint(fopl_book_api)   # FOPL book CRUD
 app.register_blueprint(fopl_chat_api)   # FOPL AI search + chatbot
@@ -332,6 +334,69 @@ def update_user(uid):
 
 
     
+@app.route('/fopl/admin')
+def fopl_admin_dashboard():
+    """FOPL admin dashboard — server-rendered."""
+    import jwt as pyjwt
+    from model.fopl_user import FoplUser
+    from model.fopl_book import FoplBook
+    from model.fopl_event import FoplEvent
+    from model.fopl_puzzle import FoplPuzzleStat
+
+    token = request.cookies.get('fopl_token')
+    if not token:
+        return redirect('/login?next=/fopl/admin')
+    try:
+        data = pyjwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        user = FoplUser.query.get(data.get('fopl_id'))
+        if not user or not user.is_admin():
+            return jsonify({'error': 'Admin access required'}), 403
+    except Exception:
+        return redirect('/login?next=/fopl/admin')
+
+    users = FoplUser.query.order_by(FoplUser.created_at.desc()).all()
+    books = FoplBook.query.all()
+    game_stats = FoplPuzzleStat.query.all()
+
+    by_age = {}
+    by_condition = {}
+    for b in books:
+        by_age[b._age_group]       = by_age.get(b._age_group, 0) + b._quantity
+        by_condition[b._condition] = by_condition.get(b._condition, 0) + b._quantity
+
+    by_game = {}
+    for s in game_stats:
+        if s._game not in by_game:
+            by_game[s._game] = {'sessions': 0, 'wins': 0}
+        by_game[s._game]['sessions'] += s._games_played
+        by_game[s._game]['wins']     += s._games_won
+
+    stats = {
+        'users': {
+            'total':   len(users),
+            'admins':  sum(1 for u in users if u.is_admin()),
+            'members': sum(1 for u in users if not u.is_admin()),
+            'list':    [u.read() for u in users],
+        },
+        'books': {
+            'total_titles':    len(books),
+            'total_inventory': sum(b._quantity for b in books),
+            'total_value':     round(sum(b._price * b._quantity for b in books), 2),
+            'by_age_group':    by_age,
+            'by_condition':    by_condition,
+        },
+        'games': {
+            'total_sessions': sum(s._games_played for s in game_stats),
+            'total_wins':     sum(s._games_won for s in game_stats),
+            'by_game':        by_game,
+        },
+        'events': {
+            'total': FoplEvent.query.count(),
+        },
+    }
+    return render_template('fopl_admin.html', stats=stats)
+
+
 @app.route('/fopl/db')
 def fopl_db_viewer():
     """FOPL database viewer — FOPL Admin only."""

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Friends of the Poway Library</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Lato', sans-serif; background: #f4f8f4; color: #1a1a1a; }
+
+    /* ── Nav ── */
+    .fopl-nav {
+      background: #023b0f; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 30px;
+    }
+    .fopl-nav-brand {
+      font-family: 'Cabin', sans-serif; font-size: 1rem; font-weight: 700;
+      color: #fff; text-decoration: none; letter-spacing: 0.04em; padding: 16px 0;
+    }
+    .fopl-nav-right { display: flex; gap: 16px; align-items: center; }
+    .fopl-nav-right a {
+      color: rgba(255,255,255,0.8); text-decoration: none;
+      font-family: 'Cabin', sans-serif; font-size: 0.85rem; font-weight: 600;
+    }
+    .fopl-nav-right a:hover { color: #fff; }
+
+    /* ── Hero ── */
+    .fopl-hero {
+      background: #023b0f; color: #fff; padding: 36px 30px 28px; border-bottom: 3px solid #045218;
+    }
+    .fopl-hero h1 {
+      font-family: 'Cabin', sans-serif; font-size: 1.8rem; font-weight: 700;
+      margin: 0 0 4px; color: #fff; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .fopl-hero p { margin: 0; opacity: 0.75; font-size: 0.9rem; }
+
+    /* ── Layout ── */
+    .admin-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+    /* ── Stat cards ── */
+    .admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    @media (max-width: 720px) { .admin-stats { grid-template-columns: repeat(2, 1fr); } }
+    .admin-stat {
+      background: #fff; border-radius: 8px; padding: 20px;
+      box-shadow: 0 2px 10px rgba(2,59,15,0.08); border-top: 4px solid #023b0f;
+      text-align: center;
+    }
+    .admin-stat-value {
+      font-family: 'Cabin', sans-serif; font-size: 2.2rem; font-weight: 700;
+      color: #023b0f; display: block; line-height: 1; margin-bottom: 6px;
+    }
+    .admin-stat-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b756b; }
+
+    /* ── Cards ── */
+    .admin-card {
+      background: #fff; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(2,59,15,0.08); border-top: 4px solid #023b0f;
+      padding: 24px; margin-bottom: 24px;
+    }
+    .admin-card h2 {
+      font-family: 'Cabin', sans-serif; font-size: 0.95rem; font-weight: 700;
+      color: #023b0f; text-transform: uppercase; letter-spacing: 0.05em;
+      margin: 0 0 16px; padding-bottom: 10px; border-bottom: 2px solid #e8f5e9;
+    }
+
+    /* ── Users table ── */
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .admin-table th {
+      background: #f4f8f4; text-align: left; padding: 8px 12px;
+      font-family: 'Cabin', sans-serif; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em; color: #6b756b;
+      border-bottom: 2px solid #dce8dc;
+    }
+    .admin-table td { padding: 9px 12px; border-bottom: 1px solid #eef2ee; color: #333; }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table tr:hover td { background: #f9fcf9; }
+    .role-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 3px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .role-badge.admin { background: #023b0f; color: #fff; }
+    .role-badge.member { background: #e8f5e9; color: #023b0f; border: 1px solid rgba(2,59,15,0.2); }
+
+    /* ── Bar charts ── */
+    .admin-bars { display: flex; flex-direction: column; gap: 10px; }
+    .admin-bar-row { display: flex; align-items: center; gap: 10px; }
+    .admin-bar-label { width: 120px; flex-shrink: 0; color: #333; font-size: 0.82rem; }
+    .admin-bar-track { flex: 1; background: #eef2ee; border-radius: 4px; height: 18px; overflow: hidden; }
+    .admin-bar-fill { height: 100%; background: #023b0f; border-radius: 4px; }
+    .admin-bar-val { width: 36px; text-align: right; flex-shrink: 0; color: #023b0f; font-weight: 700; font-size: 0.82rem; }
+
+    /* ── Game grid ── */
+    .admin-mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 600px) { .admin-mini-grid { grid-template-columns: 1fr 1fr; } }
+    .admin-mini-stat { background: #f4f8f4; border-radius: 6px; padding: 14px; text-align: center; }
+    .admin-mini-stat-val { font-family: 'Cabin', sans-serif; font-size: 1.5rem; font-weight: 700; color: #023b0f; display: block; }
+    .admin-mini-stat-lbl { font-size: 0.72rem; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+    .admin-mini-stat-sub { font-size: 0.7rem; color: #6b756b; display: block; margin-top: 3px; }
+
+    /* ── Two-col grid ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+    .col-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b756b; margin: 0 0 10px; }
+  </style>
+</head>
+<body>
+
+<nav class="fopl-nav">
+  <a class="fopl-nav-brand" href="/fopl/admin">FOPL Admin</a>
+  <div class="fopl-nav-right">
+    <a href="/fopl/db">DB Viewer</a>
+    <a href="#" onclick="signOut()">Sign Out</a>
+  </div>
+</nav>
+
+<div class="fopl-hero">
+  <h1>Admin Dashboard</h1>
+  <p>Friends of the Poway Library &mdash; site analytics and user management</p>
+</div>
+
+<div class="admin-wrap">
+
+  <!-- Top stat cards -->
+  <div class="admin-stats">
+    <div class="admin-stat">
+      <span class="admin-stat-value">{{ stats.users.total }}</span>
+      <span class="admin-stat-label">Registered Users</span>
+    </div>
+    <div class="admin-stat">
+      <span class="admin-stat-value">{{ stats.books.total_titles }}</span>
+      <span class="admin-stat-label">Books in Catalog</span>
+    </div>
+    <div class="admin-stat">
+      <span class="admin-stat-value">{{ stats.games.total_sessions }}</span>
+      <span class="admin-stat-label">Game Sessions</span>
+    </div>
+    <div class="admin-stat">
+      <span class="admin-stat-value">{{ stats.events.total }}</span>
+      <span class="admin-stat-label">Calendar Events</span>
+    </div>
+  </div>
+
+  <!-- Users table -->
+  <div class="admin-card">
+    <h2>Registered Users ({{ stats.users.total }} total &mdash; {{ stats.users.admins }} admin, {{ stats.users.members }} members)</h2>
+    <div style="overflow-x:auto;">
+      <table class="admin-table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr>
+        </thead>
+        <tbody>
+          {% for u in stats.users.list %}
+          <tr>
+            <td>{{ u.name }}</td>
+            <td>{{ u.email }}</td>
+            <td><span class="role-badge {{ u.role | lower }}">{{ u.role }}</span></td>
+            <td>{{ u.created_at[:10] if u.created_at else '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" style="text-align:center;color:#6b756b;padding:24px;">No users yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Books breakdown -->
+  <div class="admin-card">
+    <h2>Book Catalog &mdash; {{ stats.books.total_inventory }} copies &nbsp;|&nbsp; Est. value ${{ "%.2f"|format(stats.books.total_value) }}</h2>
+    <div class="two-col">
+      <div>
+        <p class="col-label">By Age Group</p>
+        <div class="admin-bars">
+          {% set age_max = stats.books.by_age_group.values() | max if stats.books.by_age_group else 1 %}
+          {% for label, val in stats.books.by_age_group.items() %}
+          <div class="admin-bar-row">
+            <span class="admin-bar-label">{{ label }}</span>
+            <div class="admin-bar-track">
+              <div class="admin-bar-fill" style="width:{{ (val / age_max * 100) | int }}%"></div>
+            </div>
+            <span class="admin-bar-val">{{ val }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <p class="col-label">By Condition</p>
+        <div class="admin-bars">
+          {% set cond_max = stats.books.by_condition.values() | max if stats.books.by_condition else 1 %}
+          {% for label, val in stats.books.by_condition.items() %}
+          <div class="admin-bar-row">
+            <span class="admin-bar-label">{{ label }}</span>
+            <div class="admin-bar-track">
+              <div class="admin-bar-fill" style="width:{{ (val / cond_max * 100) | int }}%"></div>
+            </div>
+            <span class="admin-bar-val">{{ val }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game stats -->
+  <div class="admin-card">
+    <h2>Game Activity &mdash; {{ stats.games.total_sessions }} total sessions</h2>
+    {% if stats.games.by_game %}
+    <div class="admin-mini-grid">
+      {% set game_names = {'pinshelf': 'PinShelf', 'trivia': 'Book Trivia', 'scramble': 'Word Scramble', 'shelfrun': 'Shelf Run', 'netstack': 'Net Stack', 'osi': 'OSI RPG'} %}
+      {% for game, s in stats.games.by_game.items() %}
+      {% set win_rate = ((s.wins / s.sessions * 100) | int) if s.sessions else 0 %}
+      <div class="admin-mini-stat">
+        <span class="admin-mini-stat-val">{{ s.sessions }}</span>
+        <span class="admin-mini-stat-lbl">{{ game_names.get(game, game) }}</span>
+        <span class="admin-mini-stat-sub">{{ win_rate }}% win rate</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#6b756b;font-size:0.9rem;margin:0;">No game sessions recorded yet.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+  function signOut() {
+    document.cookie = 'fopl_token=; Max-Age=0; path=/';
+    window.location.href = '/fopl/login';
+  }
+</script>
+
+</body>
+</html>
