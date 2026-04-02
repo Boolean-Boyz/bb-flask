@@ -49,6 +49,16 @@ cors = CORS(
    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
 
+# Nginx and Flask-CORS can both set Access-Control-Allow-Origin, causing a duplicate
+# header that browsers reject. Strip any extras so exactly one value is sent.
+@app.after_request
+def deduplicate_cors(response):
+    values = response.headers.getlist('Access-Control-Allow-Origin')
+    if len(values) > 1:
+        del response.headers['Access-Control-Allow-Origin']
+        response.headers['Access-Control-Allow-Origin'] = values[0]
+    return response
+
 
 # Admin Defaults
 app.config['ADMIN_USER'] = os.environ.get('ADMIN_USER') or 'Admin Name'
