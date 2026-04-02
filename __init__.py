@@ -43,6 +43,8 @@ cors = CORS(
        'https://pages.opencodingsociety.com',
        'http://fopl.opencodingsociety.com',
        'https://fopl.opencodingsociety.com',
+       'http://www.fopl.opencodingsociety.com',
+       'https://www.fopl.opencodingsociety.com',
    ],
    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
