@@ -16,5 +16,13 @@ services:
                 build: ./socket
                 ports:
                         - "8500:8500"
-    
+                restart: unless-stopped
+
+        volunteer-api:
+                image: fopl_volunteer_api
+                build: ../fopl-volunteer-api
+                ports:
+                        - "8322:3000"
+                volumes:
+                        - ../fopl-volunteer-api/data:/app/data
                 restart: unless-stopped

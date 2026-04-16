@@ -3,6 +3,22 @@ server {
     listen [::]:80;
     server_name flask.opencodingsociety.com;
 
+    # Proxy volunteer API to Node/SQLite service on 8322
+    location /volunteer-api/ {
+        proxy_pass http://localhost:8322/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+
+        add_header "Access-Control-Allow-Origin" "*" always;
+        add_header "Access-Control-Allow-Methods" "GET, POST, PATCH, DELETE, OPTIONS" always;
+        add_header "Access-Control-Allow-Headers" "Content-Type" always;
+
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+    }
+
     # Proxy Socket.IO connections to 8500
     location /socket.io/ {
         proxy_pass http://localhost:8500;
