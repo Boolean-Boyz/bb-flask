@@ -28,9 +28,12 @@ class _Books(Resource):
         age       = request.args.get('age', '')
         genre     = request.args.get('genre', '')
         condition = request.args.get('condition', '')
+        isbn      = request.args.get('isbn', '').strip()
 
         query = FoplBook.query
-        if q:
+        if isbn:
+            query = query.filter(FoplBook._isbn == isbn)
+        elif q:
             like = f'%{q}%'
             query = query.filter(or_(
                 FoplBook._title.ilike(like),
