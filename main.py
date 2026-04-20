@@ -32,6 +32,7 @@ from api.fopl_puzzle_api import fopl_puzzle_api  # FOPL puzzle stats
 from api.fopl_book_api import fopl_book_api       # FOPL book CRUD
 from api.fopl_chat_api import fopl_chat_api       # FOPL AI search + chatbot
 from api.fopl_calendar_api import fopl_calendar_api  # FOPL calendar events
+from api.fopl_facematch_api import fopl_facematch_api  # FOPL face match
 #from api.announcement import announcement_api ##temporary revert
 
 # database Initialization functions
@@ -96,6 +97,7 @@ app.register_blueprint(fopl_puzzle_api) # FOPL puzzle stats
 app.register_blueprint(fopl_book_api)   # FOPL book CRUD
 app.register_blueprint(fopl_chat_api)   # FOPL AI search + chatbot
 app.register_blueprint(fopl_calendar_api) # FOPL calendar events
+app.register_blueprint(fopl_facematch_api)  # FOPL face match
 # app.register_blueprint(announcement_api) ##temporary revert
 
 # Jokes file initialization

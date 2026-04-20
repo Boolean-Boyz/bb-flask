@@ -100,3 +100,57 @@ def call_ai_chat(system_prompt, history_messages, user_msg, timeout=60):
             return data['choices'][0]['message']['content']
 
     raise RuntimeError('No AI provider configured. Set GEMINI_API_KEY or GROQ_API_KEY in your .env file.')
+
+
+def call_ai_vision(prompt_text, image_base64, mime_type='image/jpeg', timeout=30):
+    """Send an image + prompt to Gemini Vision, falling back to Groq vision. Returns text or raises."""
+    # ── Try Gemini Vision ────────────────────────────────────────────────────
+    gemini_key = current_app.config.get('GEMINI_API_KEY')
+    gemini_server = current_app.config.get('GEMINI_SERVER')
+    if gemini_key and gemini_server:
+        payload = {
+            'contents': [{
+                'parts': [
+                    {'text': prompt_text},
+                    {'inline_data': {'mime_type': mime_type, 'data': image_base64}}
+                ]
+            }],
+            'generationConfig': {'temperature': 0.4, 'maxOutputTokens': 512}
+        }
+        resp = http.post(
+            f'{gemini_server}?key={gemini_key}',
+            headers={'Content-Type': 'application/json'},
+            json=payload, timeout=timeout,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data['candidates'][0]['content']['parts'][0]['text']
+        current_app.logger.warning(f'Gemini Vision failed ({resp.status_code}), trying Groq vision...')
+
+    # ── Try Groq Vision (Llama 4 Scout) ─────────────────────────────────────
+    groq_key = current_app.config.get('GROQ_API_KEY') or os.getenv('GROQ_API_KEY')
+    if groq_key:
+        data_url = f'data:{mime_type};base64,{image_base64}'
+        payload = {
+            'model': 'meta-llama/llama-4-scout-17b-16e-instruct',
+            'messages': [{
+                'role': 'user',
+                'content': [
+                    {'type': 'text', 'text': prompt_text},
+                    {'type': 'image_url', 'image_url': {'url': data_url}}
+                ]
+            }],
+            'temperature': 0.4,
+            'max_tokens': 512,
+        }
+        resp = http.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={'Authorization': f'Bearer {groq_key}', 'Content-Type': 'application/json'},
+            json=payload, timeout=timeout,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data['choices'][0]['message']['content']
+        current_app.logger.warning(f'Groq Vision failed ({resp.status_code}): {resp.text[:200]}')
+
+    raise RuntimeError('No vision AI provider available. Set GEMINI_API_KEY or GROQ_API_KEY.')
