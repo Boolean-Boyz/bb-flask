@@ -12,47 +12,29 @@ from api.fopl_ai_service import call_ai_vision
 fopl_facematch_api = Blueprint('fopl_facematch_api', __name__, url_prefix='/api/fopl/face-match')
 api = Api(fopl_facematch_api)
 
-PROMPT = """You are analyzing a photo for a fun library website feature. Follow these steps exactly.
+PROMPT = """You are analyzing a photo for a fun library website feature.
 
-STEP 1 — Face check:
-If there is NO clearly visible human face, respond with exactly: {"no_face": true}
+STEP 1 — If there is NO clearly visible human face, respond with exactly: {"no_face": true}
 
-STEP 2 — Describe what you actually see:
-Look carefully at the face and note:
-- Gender: male or female?
-- Skin tone / ethnicity: e.g. Black/African, white/Caucasian, East Asian, South Asian, Latino, Middle Eastern, etc.
-- Age range: 10s, 20s, 30s, 40s, 50s+?
-- Face shape, eye shape, nose, jaw, forehead, any facial hair?
+STEP 2 — Look carefully at the face. Note:
+- Apparent gender (male/female)
+- Approximate age range
+- Skin tone and ethnicity
+- Distinctive features: face shape, eyes, nose, jaw, forehead, facial hair
 
-STEP 3 — Pick a matching author:
-Choose ONE famous author whose face genuinely resembles this person.
-CRITICAL RULES — you MUST follow all of these:
-• A Black/African person → ONLY match to a Black/African author
-• A white person → ONLY match to a white author
-• An Asian person → ONLY match to an Asian author
-• A male → ONLY match to a male author
-• A female → ONLY match to a female author
-• Never cross gender or ethnicity lines
+STEP 3 — Choose ONE famous author or writer whose face genuinely resembles this person based on actual facial features. The match MUST share the same gender and similar ethnicity. Draw from any era or genre — fiction, non-fiction, science, poetry, journalism.
 
-Good author pool to draw from:
-- Black male authors: James Baldwin, Ta-Nehisi Coates, Malcolm Gladwell, Langston Hughes, August Wilson, Colson Whitehead, Edwidge Danticat, Walter Mosley
-- Black female authors: Toni Morrison, Maya Angelou, Roxane Gay, Chimamanda Ngozi Adichie, Zadie Smith, Octavia Butler, Jesmyn Ward
-- White male authors: Stephen King, Neil Gaiman, David Sedaris, Malcolm Gladwell, Ernest Hemingway, George Orwell, David Foster Wallace, Chuck Palahniuk
-- White female authors: J.K. Rowling, Agatha Christie, Donna Tartt, Elizabeth Gilbert, Anne Lamott, Joan Didion
-- East Asian authors: Haruki Murakami, Amy Tan, Celeste Ng, Ken Liu
-- South Asian authors: Salman Rushdie, Jhumpa Lahiri, Arundhati Roy
-
-STEP 4 — Respond with ONLY this JSON (no markdown, no extra text):
+STEP 4 — Respond with ONLY valid JSON, no markdown:
 {
   "name": "Author Full Name",
   "similarity": 78,
-  "reason": "One sentence about the specific facial features that match.",
+  "reason": "One specific sentence naming 2-3 concrete facial features unique to this match (e.g. jaw shape, eye spacing, brow ridge, cheekbone height) — never use generic phrases.",
   "known_for": "One sentence about their most famous works.",
-  "book": "Their most famous book title",
+  "book": "Their single most famous book title",
   "book_author": "Author Full Name"
 }
 
-Similarity must be 65–94."""
+Similarity must be between 65 and 94. Do not repeat the same author for different people."""
 
 # Fallback list — famous authors, used only when AI is unavailable.
 FALLBACK_CELEBS = [
