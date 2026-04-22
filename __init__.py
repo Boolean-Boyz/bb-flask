@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, make_response
 from flask_login import LoginManager
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -51,6 +51,30 @@ cors = CORS(
 
 # Nginx and Flask-CORS can both set Access-Control-Allow-Origin, causing a duplicate
 # header that browsers reject. Strip any extras so exactly one value is sent.
+@app.before_request
+def handle_preflight():
+    if request.method == 'OPTIONS':
+        origin = request.headers.get('Origin', '')
+        allowed = [
+            'http://localhost:4500', 'http://127.0.0.1:4500',
+            'http://localhost:4599', 'http://127.0.0.1:4599',
+            'http://localhost:4600', 'http://127.0.0.1:4600',
+            'http://localhost:4000', 'http://127.0.0.1:4000',
+            'https://open-coding-society.github.io',
+            'https://pages.opencodingsociety.com',
+            'http://fopl.opencodingsociety.com',
+            'https://fopl.opencodingsociety.com',
+        ]
+        if origin in allowed:
+            resp = make_response('', 204)
+            resp.headers['Access-Control-Allow-Origin'] = origin
+            resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+            resp.headers['Access-Control-Allow-Credentials'] = 'true'
+            resp.headers['Access-Control-Max-Age'] = '3600'
+            return resp
+
+
 @app.after_request
 def deduplicate_cors(response):
     values = response.headers.getlist('Access-Control-Allow-Origin')
