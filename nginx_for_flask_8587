@@ -1,7 +1,7 @@
 server {
     listen 80;
     listen [::]:80;
-    server_name flask.opencodingsociety.com;
+    server_name flask.opencodingsociety.com fopl-flask.opencodingsociety.com;
 
     # Proxy volunteer API to Node/SQLite service on 8322
     location /volunteer-api/ {
@@ -48,8 +48,10 @@ server {
         add_header "Access-Control-Allow-Credentials" "true" always;
 
         if ($request_method = OPTIONS) {
+            add_header "Access-Control-Allow-Origin" "$cors_origin" always;
+            add_header "Access-Control-Allow-Credentials" "true" always;
             add_header "Access-Control-Allow-Methods" "GET, POST, PUT, DELETE, OPTIONS, HEAD" always;
-            add_header "Access-Control-Allow-MaxAge" 600 always;
+            add_header "Access-Control-Allow-Max-Age" 600 always;
             add_header "Access-Control-Allow-Headers" "Authorization, Origin, X-Origin, X-Requested-With, Content-Type, Accept" always;
             return 204;
         }
